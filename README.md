@@ -22,7 +22,7 @@ ShadCN/UI: Customizable, accessible components for building your UI.
 Getting Started
 Once the app is deployed on Vercel, you can visit the chat platform at the following URL:
 
-App URL: [Add deployed URL here after Vercel deployment]
+App URL: https://nxtlk.vercel.app/
 Future Plans
 User Online Status: Display if a user is online or offline in real-time.
 Typing Indicators: Show when a user is typing in a conversation.
