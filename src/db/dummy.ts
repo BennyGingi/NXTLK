@@ -1,4 +1,5 @@
 export interface Message {
+	reactions: any;
 	id: number;
 	senderId: string;
 	content: string;

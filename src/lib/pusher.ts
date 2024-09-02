@@ -1,7 +1,6 @@
 import PusherServer from "pusher";
 import PusherClient from "pusher-js";
 
-
 declare global {
 	var pusherServer: PusherServer | undefined;
 	var pusherClient: PusherClient | undefined;

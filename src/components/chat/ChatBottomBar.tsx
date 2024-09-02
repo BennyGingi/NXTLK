@@ -6,14 +6,14 @@ import { useEffect, useRef, useState } from "react";
 import EmojiPicker from "./EmojiPicker";
 import { Button } from "../ui/button";
 import useSound from "use-sound";
-import { usePrefrences } from "@/store/usePrefrences"
+import { usePrefrences } from "@/store/usePrefrences";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { sendMessageAction } from "@/actions/message.actions";
+import { sendMessageAction, updateTypingStatus } from "@/actions/message.actions";
 import { useSelectedUser } from "@/store/useSelectedUser";
 import { CldUploadWidget, CloudinaryUploadWidgetInfo } from "next-cloudinary";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
-import { pusherClient } from "@/lib/pusher"
+import { pusherClient } from "@/lib/pusher";
 import { Message } from "@/db/dummy";
 
 const ChatBottomBar = () => {
@@ -21,6 +21,7 @@ const ChatBottomBar = () => {
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
 	const { selectedUser } = useSelectedUser();
 	const { user: currentUser } = useKindeBrowserClient();
+	const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
 
 	const { soundEnabled } = usePrefrences();
 	const queryClient = useQueryClient();
@@ -54,6 +55,22 @@ const ChatBottomBar = () => {
 		textAreaRef.current?.focus();
 	};
 
+	const handleTyping = () => {
+		if (currentUser && selectedUser) {
+			updateTypingStatus(currentUser.id, selectedUser.id, true);
+
+			if (typingTimeout) {
+				clearTimeout(typingTimeout);
+			}
+
+			const newTimeout = setTimeout(() => {
+				updateTypingStatus(currentUser.id, selectedUser.id, false);
+			}, 3000); // Stop "typing" after 3 seconds of inactivity
+
+			setTypingTimeout(newTimeout);
+		}
+	};
+
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === "Enter" && !e.shiftKey) {
 			e.preventDefault();
@@ -64,6 +81,8 @@ const ChatBottomBar = () => {
 			e.preventDefault();
 			setMessage(message + "\n");
 		}
+
+		handleTyping();
 	};
 
 	useEffect(() => {
@@ -82,12 +101,19 @@ const ChatBottomBar = () => {
 
 		channel.bind("newMessage", handleNewMessage);
 
-		// ! Absolutely important, otherwise the event listener will be added multiple times which means you'll see the incoming new message multiple times
 		return () => {
 			channel.unbind("newMessage", handleNewMessage);
 			pusherClient.unsubscribe(channelName);
 		};
 	}, [currentUser?.id, selectedUser?.id, queryClient, playNotificationSound, soundEnabled]);
+
+	useEffect(() => {
+		return () => {
+			if (typingTimeout) {
+				clearTimeout(typingTimeout);
+			}
+		};
+	}, [typingTimeout]);
 
 	return (
 		<div className='p-2 flex justify-between w-full items-center gap-2'>
@@ -151,7 +177,7 @@ const ChatBottomBar = () => {
 				>
 					<Textarea
 						autoComplete='off'
-						placeholder='Type a message...'
+						placeholder='Aa'
 						rows={1}
 						className='w-full border rounded-full flex items-center h-9 resize-none overflow-hidden
 						bg-background min-h-0'
@@ -160,6 +186,7 @@ const ChatBottomBar = () => {
 						onChange={(e) => {
 							setMessage(e.target.value);
 							playRandomKeyStrokeSound();
+							handleTyping();
 						}}
 						ref={textAreaRef}
 					/>
@@ -206,4 +233,5 @@ const ChatBottomBar = () => {
 		</div>
 	);
 };
+
 export default ChatBottomBar;

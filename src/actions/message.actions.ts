@@ -3,7 +3,7 @@
 import { Message } from "@/db/dummy";
 import { redis } from "@/lib/db";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { pusherServer } from "@/lib/pusher"
+import { pusherServer } from "@/lib/pusher";
 
 type SendMessageActionArgs = {
 	content: string;
@@ -21,6 +21,17 @@ export async function sendMessageAction({ content, messageType, receiverId }: Se
 
 	const conversationId = `conversation:${[senderId, receiverId].sort().join(":")}`;
 
+	// the issue with this has been explained in the tutorial, we need to sort the ids to make sure the conversation id is always the same
+	// john, jane
+	// 123,  456
+
+	// john sends a message to jane
+	// senderId: 123, receiverId: 456
+	// `conversation:123:456`
+
+	// jane sends a message to john
+	// senderId: 456, receiverId: 123
+	// conversation:456:123
 
 	const conversationExists = await redis.exists(conversationId);
 
@@ -70,4 +81,14 @@ export async function getMessages(selectedUserId: string, currentUserId: string)
 	const messages = (await pipeline.exec()) as Message[];
 
 	return messages;
+}
+export async function updateTypingStatus(userId: string, receiverId: string, isTyping: boolean) {
+  const channelName = `${userId}__${receiverId}`.split("__").sort().join("__");
+
+  await pusherServer?.trigger(channelName, "typingStatus", {
+    userId,
+    isTyping,
+  });
+
+  return { success: true };
 }

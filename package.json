@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "dotenv -e .env.local.dev -- next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -29,13 +29,16 @@
     "next": "14.2.5",
     "next-cloudinary": "^6.10.1",
     "next-themes": "^0.3.0",
+    "nxtlk": "file:",
     "pusher": "^5.2.0",
     "pusher-js": "^8.4.0-rc2",
     "react": "^18",
     "react-dom": "^18",
+    "react-medium-image-zoom": "^5.2.9",
     "react-resizable-panels": "^2.1.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
+    "use-debounce": "^10.0.3",
     "use-sound": "^4.0.3",
     "zustand": "^4.5.5"
   },
@@ -43,6 +46,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "dotenv-cli": "^7.4.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
     "postcss": "^8",

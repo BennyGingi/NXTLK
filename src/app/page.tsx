@@ -19,6 +19,12 @@ async function getUsers(): Promise<User[]> {
 	const { getUser } = getKindeServerSession();
 	const currentUser = await getUser();
 
+	// Check if userKeys array is empty
+	if (userKeys.length === 0) {
+		return [];
+	}
+
+	// Execute Redis pipeline if there are userKeys
 	const pipeline = redis.pipeline();
 	userKeys.forEach((key) => pipeline.hgetall(key));
 	const results = (await pipeline.exec()) as User[];
@@ -29,6 +35,7 @@ async function getUsers(): Promise<User[]> {
 			users.push(user);
 		}
 	}
+
 	return users;
 }
 
@@ -57,3 +64,4 @@ export default async function Home() {
 		</main>
 	);
 }
+	

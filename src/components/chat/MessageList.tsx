@@ -5,13 +5,16 @@ import { useSelectedUser } from "@/store/useSelectedUser";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { getMessages } from "@/actions/message.actions";
-import { useEffect, useRef } from "react";
-import MessageSkeleton from "../skeleton/MessageSkeleton"
+import { useEffect, useRef, useState } from "react";
+import MessageSkeleton from "../skeleton/MessageSkeleton";
+import { pusherClient } from "@/lib/pusher";
 
 const MessageList = () => {
 	const { selectedUser } = useSelectedUser();
 	const { user: currentUser, isLoading: isUserLoading } = useKindeBrowserClient();
 	const messageContainerRef = useRef<HTMLDivElement>(null);
+	const [isTyping, setIsTyping] = useState(false);
+	const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
 	const { data: messages, isLoading: isMessagesLoading } = useQuery({
 		queryKey: ["messages", selectedUser?.id],
@@ -23,16 +26,56 @@ const MessageList = () => {
 		enabled: !!selectedUser && !!currentUser && !isUserLoading,
 	});
 
-	// Scroll to the bottom of the message container when new messages are added
-	useEffect(() => {
-		if (messageContainerRef.current) {
+	const scrollToBottom = () => {
+		if (messageContainerRef.current && shouldAutoScroll) {
 			messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
 		}
-	}, [messages]);
+	};
+
+	useEffect(() => {
+		scrollToBottom();
+	}, [messages, isTyping]);
+
+	useEffect(() => {
+		const container = messageContainerRef.current;
+		if (!container) return;
+
+		const handleScroll = () => {
+			const { scrollTop, scrollHeight, clientHeight } = container;
+			const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px threshold
+			setShouldAutoScroll(isAtBottom);
+		};
+
+		container.addEventListener('scroll', handleScroll);
+		return () => container.removeEventListener('scroll', handleScroll);
+	}, []);
+
+	useEffect(() => {
+		if (selectedUser && currentUser) {
+			const channelName = `${currentUser.id}__${selectedUser.id}`.split("__").sort().join("__");
+			const channel = pusherClient.subscribe(channelName);
+
+			channel.bind("typingStatus", ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
+				if (userId === selectedUser.id) {
+					setIsTyping(isTyping);
+					scrollToBottom();
+				}
+			});
+
+			channel.bind("newMessage", () => {
+				scrollToBottom();
+			});
+
+			return () => {
+				channel.unbind("typingStatus");
+				channel.unbind("newMessage");
+				pusherClient.unsubscribe(channelName);
+			};
+		}
+	}, [selectedUser, currentUser]);
 
 	return (
 		<div ref={messageContainerRef} className='w-full overflow-y-auto overflow-x-hidden h-full flex flex-col'>
-			{/* This component ensure that an animation is applied when items are added to or removed from the list */}
 			<AnimatePresence>
 				{!isMessagesLoading &&
 					messages?.map((message, index) => (
@@ -99,8 +142,27 @@ const MessageList = () => {
 						<MessageSkeleton />
 					</>
 				)}
+
+				{isTyping && (
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: 20 }}
+						className="flex items-center p-4"
+					>
+						<Avatar className='flex justify-center items-center'>
+							<AvatarImage
+								src={selectedUser?.image}
+								alt='User Image'
+								className='border-2 border-white rounded-full'
+							/>
+						</Avatar>
+						<span className="ml-2 text-sm text-gray-500">Typing...</span>
+					</motion.div>
+				)}
 			</AnimatePresence>
 		</div>
 	);
 };
+
 export default MessageList;
