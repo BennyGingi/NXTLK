@@ -1,6 +1,3 @@
-*** server is down due to maitnance and updates ****
-
-
 NXTLK
 Collaborate seamlessly with your team, stay connected, and get things done.
 
@@ -23,11 +20,7 @@ Kinde: Authentication as a service for seamless login and signup.
 TypeScript: Strict type definitions for robust development.
 ShadCN/UI: Customizable, accessible components for building your UI.
 Getting Started
-Once the app is deployed on Vercel, you can visit the chat platform at the following URL:
 
+
+ you can visit the chat platform at the following URL:
 App URL: https://nxtlk.vercel.app/
-Future Plans
-User Online Status: Display if a user is online or offline in real-time.
-Typing Indicators: Show when a user is typing in a conversation.
-File Sharing: Upload and share documents or images within chat threads.
-Push Notifications: Get notified about new messages even when you're away from the app.
